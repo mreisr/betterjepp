@@ -85,9 +85,11 @@ export function CollapsiblePanel({ children }: CollapsiblePanelProps) {
         'relative bg-card border-r border-border flex flex-col',
         isResizing && 'select-none'
       )}
-      style={{ width: localWidth }}
+      style={{ width: localWidth, minWidth: localWidth }}
     >
-      <div className="flex-1 overflow-hidden">{children}</div>
+      <div className="flex-1 overflow-y-hidden overflow-x-auto">
+        <div className="min-w-[200px] h-full">{children}</div>
+      </div>
 
       <div
         className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-10"
