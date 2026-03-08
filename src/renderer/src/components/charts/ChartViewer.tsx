@@ -18,7 +18,9 @@ import { getApiBaseUrl } from '@/lib/api-client'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 
-pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
+import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl
 
 function PdfControls() {
   const pdfZoom = useUIStore((s) => s.pdfZoom)
