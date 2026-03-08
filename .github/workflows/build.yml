@@ -17,6 +17,13 @@ jobs:
         include:
           - os: windows-latest
             platform: win
+            ext: .exe
+          - os: macos-latest
+            platform: mac
+            ext: .dmg
+          - os: ubuntu-latest
+            platform: linux
+            ext: .AppImage
 
     runs-on: ${{ matrix.os }}
 
@@ -42,12 +49,42 @@ jobs:
         if: matrix.platform == 'win'
         run: pnpm run build:win
 
+      - name: Build macOS
+        if: matrix.platform == 'mac'
+        run: pnpm run build:mac
+
+      - name: Build Linux
+        if: matrix.platform == 'linux'
+        run: pnpm run build:linux
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Create ZIP (Windows)
+        if: matrix.platform == 'win'
+        run: |
+          cd dist
+          Compress-Archive -Path *.exe,*.yml -DestinationPath betterjepp-${{ steps.version.outputs.VERSION }}-win.zip
+
+      - name: Create ZIP (macOS)
+        if: matrix.platform == 'mac'
+        run: |
+          cd dist
+          zip betterjepp-${{ steps.version.outputs.VERSION }}-mac.zip *.dmg
+
+      - name: Create ZIP (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          cd dist
+          zip betterjepp-${{ steps.version.outputs.VERSION }}-linux.zip *.AppImage
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.platform }}
-          path: |
-            dist/
+          path: dist/*.zip
           retention-days: 5
 
   release:
@@ -58,9 +95,6 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -70,7 +104,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: artifacts/*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
