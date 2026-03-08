@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { PanelLeftClose, PanelLeft } from 'lucide-react'
 import { useUIStore } from '@/stores/uiStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { DEFAULT_PANEL_WIDTH, MIN_PANEL_WIDTH, MAX_PANEL_WIDTH } from '@/types'
+import { DEFAULT_PANEL_WIDTH, MAX_PANEL_WIDTH } from '@/types'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -37,7 +37,7 @@ export function CollapsiblePanel({ children }: CollapsiblePanelProps) {
       setIsResizing(true)
 
       const handleMouseMove = (e: MouseEvent) => {
-        const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, e.clientX - 48))
+        const newWidth = Math.max(80, Math.min(MAX_PANEL_WIDTH, e.clientX - 48))
         widthRef.current = newWidth
         setLocalWidth(newWidth)
       }
