@@ -87,7 +87,7 @@ export function CollapsiblePanel({ children }: CollapsiblePanelProps) {
       )}
       style={{ width: localWidth }}
     >
-      <div className="flex-1 overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
         <div className="h-full" style={{ minWidth: 240, width: Math.max(localWidth, 240) }}>
           {children}
         </div>
