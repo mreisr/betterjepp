@@ -82,12 +82,12 @@ export function CollapsiblePanel({ children }: CollapsiblePanelProps) {
   return (
     <div
       className={cn(
-        'relative bg-card border-r border-border flex flex-col',
+        'relative bg-card border-r border-border flex flex-col min-w-0 shrink-0',
         isResizing && 'select-none'
       )}
       style={{ width: localWidth }}
     >
-      <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-hide">
+      <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden scrollbar-hide">
         <div className="h-full w-[280px]">{children}</div>
       </div>
 
