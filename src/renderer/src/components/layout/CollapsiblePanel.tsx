@@ -1,0 +1,108 @@
+import { useState, useCallback, useEffect } from 'react'
+import { PanelLeftClose, PanelLeft } from 'lucide-react'
+import { useUIStore } from '@/stores/uiStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { DEFAULT_PANEL_WIDTH, MIN_PANEL_WIDTH, MAX_PANEL_WIDTH } from '@/types'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+
+interface CollapsiblePanelProps {
+  children: React.ReactNode
+}
+
+export function CollapsiblePanel({ children }: CollapsiblePanelProps) {
+  const panelCollapsed = useUIStore((s) => s.panelCollapsed)
+  const setPanelCollapsed = useUIStore((s) => s.setPanelCollapsed)
+  const panelWidth = useSettingsStore((s) => s.settings.panelWidth)
+  const setPanelWidth = useSettingsStore((s) => s.setPanelWidth)
+
+  const [isResizing, setIsResizing] = useState(false)
+  const [localWidth, setLocalWidth] = useState(panelWidth || DEFAULT_PANEL_WIDTH)
+
+  useEffect(() => {
+    if (!isResizing) {
+      setLocalWidth(panelWidth || DEFAULT_PANEL_WIDTH)
+    }
+  }, [panelWidth, isResizing])
+
+  const startResizing = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      setIsResizing(true)
+
+      const handleMouseMove = (e: MouseEvent) => {
+        const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, e.clientX - 48))
+        setLocalWidth(newWidth)
+      }
+
+      const handleMouseUp = () => {
+        setIsResizing(false)
+        setPanelWidth(localWidth)
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    },
+    [localWidth, setPanelWidth]
+  )
+
+  const toggleCollapse = () => {
+    setPanelCollapsed(!panelCollapsed)
+  }
+
+  if (panelCollapsed) {
+    return (
+      <div className="w-10 bg-card border-r border-border flex flex-col items-center py-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapse}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeft className="w-5 h-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Expand Panel</TooltipContent>
+        </Tooltip>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        'relative bg-card border-r border-border flex flex-col',
+        isResizing && 'select-none'
+      )}
+      style={{ width: localWidth }}
+    >
+      <div className="flex-1 overflow-hidden">{children}</div>
+
+      <div
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-10"
+        onMouseDown={startResizing}
+      />
+
+      <div className="absolute right-2 top-2 z-20">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapse}
+              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Collapse Panel</TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
+  )
+}

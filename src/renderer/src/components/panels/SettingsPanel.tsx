@@ -1,0 +1,137 @@
+import { useState, useEffect } from 'react'
+import { Save, FolderOpen, Check, Loader2 } from 'lucide-react'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
+
+export function SettingsPanel() {
+  const settings = useSettingsStore((s) => s.settings)
+  const setApiUrl = useSettingsStore((s) => s.setApiUrl)
+  const setSimbriefPilotId = useSettingsStore((s) => s.setSimbriefPilotId)
+  const setExportDir = useSettingsStore((s) => s.setExportDir)
+
+  const [apiUrl, setApiUrlLocal] = useState(settings.apiUrl)
+  const [pilotId, setPilotIdLocal] = useState(settings.simbriefPilotId)
+  const [exportDir, setExportDirLocal] = useState(settings.exportDir)
+  const [saved, setSaved] = useState(false)
+  const [selectingDir, setSelectingDir] = useState(false)
+
+  useEffect(() => {
+    setApiUrlLocal(settings.apiUrl)
+    setPilotIdLocal(settings.simbriefPilotId)
+    setExportDirLocal(settings.exportDir)
+  }, [settings])
+
+  const handleSave = () => {
+    setApiUrl(apiUrl)
+    setSimbriefPilotId(pilotId)
+    setExportDir(exportDir)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleSelectDir = async () => {
+    setSelectingDir(true)
+    try {
+      const dir = await window.api.selectDirectory()
+      if (dir) {
+        setExportDirLocal(dir)
+      }
+    } finally {
+      setSelectingDir(false)
+    }
+  }
+
+  const hasChanges =
+    apiUrl !== settings.apiUrl ||
+    pilotId !== settings.simbriefPilotId ||
+    exportDir !== settings.exportDir
+
+  return (
+    <div className="h-full overflow-auto">
+      <div className="p-4 border-b border-border">
+        <h2 className="font-semibold">Settings</h2>
+      </div>
+
+      <div className="p-4 space-y-6 max-w-md">
+        <div className="space-y-2">
+          <label className="text-sm font-medium">API URL</label>
+          <Input
+            value={apiUrl}
+            onChange={(e) => setApiUrlLocal(e.target.value)}
+            placeholder="http://localhost:8080"
+          />
+          <p className="text-xs text-muted-foreground">The base URL for the chart API server</p>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">SimBrief Pilot ID</label>
+          <Input
+            value={pilotId}
+            onChange={(e) => setPilotIdLocal(e.target.value)}
+            placeholder="Your SimBrief Pilot ID"
+          />
+          <p className="text-xs text-muted-foreground">
+            Find your Pilot ID in SimBrief Account Settings
+          </p>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Export Directory</label>
+          <div className="flex gap-2">
+            <Input
+              value={exportDir}
+              onChange={(e) => setExportDirLocal(e.target.value)}
+              placeholder="Select a directory..."
+              className="flex-1"
+            />
+            <Button variant="outline" size="icon" onClick={handleSelectDir} disabled={selectingDir}>
+              {selectingDir ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FolderOpen className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Charts will be exported to {'{dir}/{ICAO}/{chart_name}.pdf'}
+          </p>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center gap-2">
+          <Button onClick={handleSave} disabled={!hasChanges}>
+            {saved ? (
+              <>
+                <Check className="w-4 h-4 mr-2" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Settings
+              </>
+            )}
+          </Button>
+          {hasChanges && <span className="text-xs text-muted-foreground">Unsaved changes</span>}
+        </div>
+
+        <Separator />
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">About</h3>
+          <p className="text-xs text-muted-foreground">
+            BetterJepp - A flight simulation chart viewer with SimBrief integration.
+          </p>
+          <p className="text-xs text-muted-foreground">Version 1.0.0</p>
+        </div>
+      </div>
+    </div>
+  )
+}
