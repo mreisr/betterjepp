@@ -47,7 +47,7 @@ const api = {
   downloadUpdate: (): Promise<{ success: boolean; error?: string }> =>
     ipcRenderer.invoke('download-update'),
 
-  installUpdate: (): void => ipcRenderer.send('install-update'),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke('install-update'),
 
   onUpdateAvailable: (callback: (version: string) => void) => {
     ipcRenderer.on('update-available', (_event, version) => callback(version))

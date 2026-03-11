@@ -57,7 +57,7 @@ export interface SimBriefAlternate {
 export interface SimBriefOFP {
   origin: SimBriefAirport
   destination: SimBriefAirport
-  alternates: SimBriefAlternate[]
+  alternate: SimBriefAlternate | SimBriefAlternate[]
   aircraft: SimBriefAircraft
   times: SimBriefTimes
   general: SimBriefGeneral
@@ -78,7 +78,8 @@ export async function fetchSimBriefOfp(pilotId: string): Promise<SimBriefOFP> {
   const response = await simbriefApi.get('xml.fetcher.php', {
     searchParams: {
       userid: pilotId,
-      json: '1'
+      json: '1',
+      alts: '1'
     }
   })
 

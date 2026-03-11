@@ -29,7 +29,7 @@ interface Api {
   getDefaultExportDir: () => Promise<string>
   checkForUpdates: () => Promise<{ available: boolean; version?: string; error?: string }>
   downloadUpdate: () => Promise<{ success: boolean; error?: string }>
-  installUpdate: () => void
+  installUpdate: () => Promise<void>
   onUpdateAvailable: (callback: (version: string) => void) => void
   onUpdateDownloaded: (callback: (version: string) => void) => void
 }

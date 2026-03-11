@@ -79,10 +79,10 @@ function FlightInfo({ ofp }: { ofp: SimBriefOFP }) {
               <AirportLink icao={ofp.destination.icao_code} name={ofp.destination.name} />
             </div>
           )}
-          {ofp.alternates && ofp.alternates.length > 0 && (
+          {ofp.alternate && (
             <div>
               <div className="text-xs text-muted-foreground mb-1">Alternates</div>
-              {ofp.alternates.map((alt, i) => (
+              {(Array.isArray(ofp.alternate) ? ofp.alternate : [ofp.alternate]).map((alt, i) => (
                 <AirportLink key={i} icao={alt.icao_code} name={alt.name} />
               ))}
             </div>
@@ -115,7 +115,12 @@ export function FlightPanel() {
   const pilotId = useSettingsStore((s) => s.settings.simbriefPilotId)
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['simbrief', pilotId],
-    queryFn: () => fetchSimBriefOfp(pilotId!),
+    queryFn: async () => {
+      const result = await fetchSimBriefOfp(pilotId!)
+      console.log('SimBrief OFP:', result)
+      console.log('Alternates:', result.alternate)
+      return result
+    },
     enabled: !!pilotId,
     staleTime: 5 * 60 * 1000,
     retry: 1
