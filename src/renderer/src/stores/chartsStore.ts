@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ChartInfo, ChartType } from '@/lib/api-types'
-import { PinnedChart, ChartCategory } from '@/types'
+import { PinnedChart, ChartCategory, ChartFlight } from '@/types'
 
 interface ChartsState {
   currentIcao: string
@@ -9,6 +9,7 @@ interface ChartsState {
   chartTypes: ChartType[]
   pinnedCharts: PinnedChart[]
   categoryFilter: ChartCategory
+  flightFilter: ChartFlight
   searchQuery: string
 
   setCurrentIcao: (icao: string) => void
@@ -19,6 +20,7 @@ interface ChartsState {
   unpinChart: (icao: string, filename: string) => void
   isPinned: (icao: string, filename: string) => boolean
   setCategoryFilter: (category: ChartCategory) => void
+  setFlightFilter: (flight: ChartFlight) => void
   setSearchQuery: (query: string) => void
 }
 
@@ -30,6 +32,7 @@ export const useChartsStore = create<ChartsState>()(
       chartTypes: [],
       pinnedCharts: [],
       categoryFilter: 'all',
+      flightFilter: 'all',
       searchQuery: '',
 
       setCurrentIcao: (icao: string) => {
@@ -72,6 +75,10 @@ export const useChartsStore = create<ChartsState>()(
 
       setCategoryFilter: (category: ChartCategory) => {
         set({ categoryFilter: category })
+      },
+
+      setFlightFilter: (flight: ChartFlight) => {
+        set({ flightFilter: flight })
       },
 
       setSearchQuery: (query: string) => {
@@ -117,4 +124,9 @@ export function categorizeChart(chart: ChartInfo): ChartCategory {
     return 'approach'
   }
   return 'other'
+}
+
+export function isVfrChart(chart: ChartInfo): boolean {
+  const chartType = chart.chart_type?.toUpperCase() || ''
+  return chartType.startsWith('6')
 }

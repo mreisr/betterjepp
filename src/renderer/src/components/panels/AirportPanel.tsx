@@ -10,11 +10,13 @@ import {
   Plane,
   Clock,
   Fuel,
-  Wrench
+  Wrench,
+  SlidersHorizontal,
+  FanIcon
 } from 'lucide-react'
 import { api } from '@/lib/api-client'
-import { useChartsStore, categorizeChart } from '@/stores/chartsStore'
-import { ChartCategory, CHART_CATEGORY_COLORS } from '@/types'
+import { useChartsStore, categorizeChart, isVfrChart } from '@/stores/chartsStore'
+import { ChartCategory, ChartFlight, CHART_CATEGORY_COLORS } from '@/types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -124,6 +126,8 @@ export function AirportPanel() {
   const setCurrentChart = useChartsStore((s) => s.setCurrentChart)
   const categoryFilter = useChartsStore((s) => s.categoryFilter)
   const setCategoryFilter = useChartsStore((s) => s.setCategoryFilter)
+  const flightFilter = useChartsStore((s) => s.flightFilter)
+  const setFlightFilter = useChartsStore((s) => s.setFlightFilter)
   const searchQuery = useChartsStore((s) => s.searchQuery)
   const setSearchQuery = useChartsStore((s) => s.setSearchQuery)
   const pinnedCharts = useChartsStore((s) => s.pinnedCharts)
@@ -159,6 +163,11 @@ export function AirportPanel() {
       charts = charts.filter((chart) => categorizeChart(chart) === categoryFilter)
     }
 
+    if (flightFilter !== 'all') {
+      const isVfr = flightFilter === 'vfr'
+      charts = charts.filter((chart) => isVfrChart(chart) === isVfr)
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       charts = charts.filter(
@@ -179,7 +188,7 @@ export function AirportPanel() {
       if (!aPinned && bPinned) return 1
       return a.proc_id.localeCompare(b.proc_id)
     })
-  }, [data, categoryFilter, searchQuery, pinnedCharts, currentIcao])
+  }, [data, categoryFilter, flightFilter, searchQuery, pinnedCharts, currentIcao])
 
   if (!currentIcao) {
     return (
@@ -222,14 +231,46 @@ export function AirportPanel() {
           </button>
         </div>
         {activeView === 'charts' && (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search charts..."
-              value={localSearch}
-              onChange={(e) => setLocalSearch(e.target.value)}
-              className="pl-9 bg-pill"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search charts..."
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
+                className="pl-9 bg-pill"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="flex-shrink-0 bg-pill border-0 shadow-none h-9 w-9"
+                >
+                  <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                {(['all', 'vfr', 'ifr'] as ChartFlight[]).map((flight) => {
+                  const isActive = flightFilter === flight
+                  const label = flight === 'all' ? 'All Charts' : flight.toUpperCase()
+
+                  return (
+                    <DropdownMenuItem
+                      key={flight}
+                      onClick={() => setFlightFilter(flight)}
+                      className={cn(
+                        'justify-center font-medium cursor-pointer py-2',
+                        isActive && 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      {label}
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </div>
@@ -386,8 +427,8 @@ function AirportInfoView({
           value={airport.beacon ? 'Yes' : 'No'}
         />
         <InfoRow
-          icon={<Fuel className="w-4 h-4" />}
-          label="Jet A1 Start"
+          icon={<FanIcon className="w-4 h-4" />}
+          label="Jet Start Unit"
           value={airport.jet_start_unit ? 'Available' : 'N/A'}
         />
         <InfoRow

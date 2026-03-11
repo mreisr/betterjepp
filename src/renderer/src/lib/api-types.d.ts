@@ -1,3 +1,11 @@
+/**
+ * Hand-maintained OpenAPI types for the Marinvent Chart API.
+ *
+ * Note: openapi-typescript@7.x does not support Swagger 2.0, so we cannot
+ * auto-generate from the backend's /swagger/doc.json. This file must be
+ * manually kept in sync with the API schema.
+ */
+
 export interface ChartInfo {
   icao: string
   filename: string

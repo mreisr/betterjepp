@@ -14,6 +14,14 @@ export interface AppSettings {
 
 export type ChartCategory = 'all' | 'taxi' | 'departure' | 'arrival' | 'approach' | 'other'
 
+export type ChartFlight = 'all' | 'vfr' | 'ifr'
+
+export const CHART_FLIGHT_COLORS: Record<ChartFlight, string> = {
+  all: 'var(--color-indigo-500)',
+  vfr: 'var(--color-green-500)',
+  ifr: 'var(--color-blue-500)'
+}
+
 export type SidebarTab = 'flight' | 'airport' | 'settings' | 'search'
 
 export const DEFAULT_SETTINGS: AppSettings = {

@@ -36,8 +36,16 @@ export function SettingsPanel() {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        await fetch(`${getApiBaseUrl()}/health`)
-        setIsConnected(true)
+        const res = await fetch(`${getApiBaseUrl()}/health`)
+        const ver: string = (await res.json()).version.split('.')
+        if (parseInt(ver[0]) >= 1 && parseInt(ver[1]) >= 3) {
+          setIsConnected(true)
+        } else {
+          setIsConnected(false)
+          alert(
+            'Please update the API by downloading the latest version, as the current version is not supported.'
+          )
+        }
       } catch {
         setIsConnected(false)
       }
