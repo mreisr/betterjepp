@@ -1,6 +1,6 @@
 {
   "name": "betterjepp",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "An Electron application with React and TypeScript",
   "main": "./out/main/index.js",
   "author": "example.com",
@@ -14,7 +14,7 @@
     "generate:api": "openapi-typescript http://localhost:8080/swagger/doc.json -o src/renderer/src/lib/api-types.d.ts",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
-    "build": "pnpm run typecheck && electron-vite build",
+    "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "pnpm run build && electron-builder --dir",
     "build:win": "pnpm run build && electron-builder --win",
