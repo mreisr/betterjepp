@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { Loader2, MapPin } from 'lucide-react'
 import { useChartsStore } from '@/stores/chartsStore'
@@ -57,7 +57,7 @@ function GeorefStatusBadge() {
 
   return (
     <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-1 rounded-md bg-background/80 backdrop-blur-sm border border-border text-xs">
-      {chartGeoStatus.georeferenced ? (
+      {chartGeoStatus.georef?.georeferenced ? (
         <>
           <MapPin className="w-3 h-3 text-green-500" />
           <span className="text-green-500">Georeferenced</span>
@@ -73,16 +73,14 @@ function GeorefStatusBadge() {
 }
 
 function PositionArrow({
-  pixelX,
-  pixelY,
+  percentX,
+  percentY,
   heading,
-  zoom,
   rotation
 }: {
-  pixelX: number
-  pixelY: number
+  percentX: number
+  percentY: number
   heading: number
-  zoom: number
   rotation: number
 }) {
   const adjustedHeading = heading - rotation
@@ -91,9 +89,9 @@ function PositionArrow({
     <div
       className="absolute pointer-events-none z-20"
       style={{
-        left: pixelX * zoom,
-        top: pixelY * zoom,
-        transform: `translate(-50%, -50%) rotate(${adjustedHeading}deg) scale(${zoom})`
+        left: `${percentX * 100}%`,
+        top: `${percentY * 100}%`,
+        transform: `translate(-50%, -50%) rotate(${adjustedHeading}deg)`
       }}
     >
       <svg
@@ -132,25 +130,29 @@ export function ChartViewer() {
 
   const [containerWidth, setContainerWidth] = useState(800)
   const [pixelPosition, setPixelPosition] = useState<{ x: number; y: number } | null>(null)
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
+  const pageWrapperRef = useRef<HTMLDivElement>(null)
+
+  // getScale is no longer needed since we use percentages
 
   useEffect(() => {
     if (!currentChart) {
       resetPdfView()
       setChartGeoStatus(null)
+      return
     }
-  }, [currentChart, resetPdfView, setChartGeoStatus])
 
-  useEffect(() => {
-    const handleResize = () => {
-      const container = document.getElementById('chart-container')
-      if (container) {
-        setContainerWidth(container.clientWidth - 48)
+    const container = document.getElementById('chart-container')
+    if (!container) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width - 48)
       }
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    })
+    resizeObserver.observe(container)
+    return () => resizeObserver.disconnect()
+  }, [currentChart])
 
   useEffect(() => {
     if (!currentChart || !georefEnabled) {
@@ -161,7 +163,7 @@ export function ChartViewer() {
     const fetchGeoStatus = async () => {
       try {
         const res = await fetch(
-          `${getApiBaseUrl()}/api/v1/charts/${currentChart.icao}/geo/status/${currentChart.filename}`
+          `${getApiBaseUrl()}/api/v1/charts/${currentChart.icao}/data/${currentChart.filename}`
         )
         if (res.ok) {
           const data = await res.json()
@@ -178,12 +180,21 @@ export function ChartViewer() {
   }, [currentChart, georefEnabled, setChartGeoStatus])
 
   useEffect(() => {
-    if (!currentChart || !chartGeoStatus?.georeferenced || !position || !georefEnabled) {
+    console.log('[ChartViewer] Position effect:', {
+      currentChart: !!currentChart,
+      chartGeoStatus: chartGeoStatus?.georef?.georeferenced,
+      position: position ? `${position.lat}, ${position.lon}, hdg=${position.heading}` : null,
+      georefEnabled,
+      pixelPosition
+    })
+
+    if (!currentChart || !chartGeoStatus?.georef?.georeferenced || !position || !georefEnabled) {
       setPixelPosition(null)
       return
     }
 
     const fetchPixel = async () => {
+      console.log('[ChartViewer] Fetching pixel for:', { lat: position.lat, lon: position.lon })
       try {
         const res = await fetch(
           `${getApiBaseUrl()}/api/v1/charts/${currentChart.icao}/geo/coord2pixel/${currentChart.filename}`,
@@ -195,13 +206,15 @@ export function ChartViewer() {
         )
         if (res.ok) {
           const data: CoordToPixelResponse = await res.json()
+          console.log('[ChartViewer] Coord2Pixel response:', data)
           if (!data.error) {
             setPixelPosition({ x: data.x, y: data.y })
           } else {
             setPixelPosition(null)
           }
         }
-      } catch {
+      } catch (e) {
+        console.log('[ChartViewer] Coord2Pixel error:', e)
         setPixelPosition(null)
       }
     }
@@ -218,7 +231,16 @@ export function ChartViewer() {
   return (
     <div id="chart-container" className="h-full flex flex-col bg-muted/30">
       <div className="flex-1 overflow-auto flex items-start justify-center p-6">
-        <div className="relative">
+        <div
+          className="relative"
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+            setCursorPos({ x, y })
+          }}
+          onMouseLeave={() => setCursorPos(null)}
+        >
           <Document
             file={pdfUrl}
             onLoadSuccess={({ numPages }) => setPdfNumPages(numPages)}
@@ -233,7 +255,7 @@ export function ChartViewer() {
               </div>
             }
           >
-            <div style={pdfDarkMode ? { filter: 'invert(1)' } : undefined}>
+            <div ref={pageWrapperRef} style={pdfDarkMode ? { filter: 'invert(1)' } : undefined}>
               <Page
                 pageNumber={pdfPage}
                 scale={pdfZoom}
@@ -246,14 +268,35 @@ export function ChartViewer() {
 
           <GeorefStatusBadge />
 
-          {chartGeoStatus?.georeferenced && pixelPosition && position && georefEnabled && (
-            <PositionArrow
-              pixelX={pixelPosition.x}
-              pixelY={pixelPosition.y}
-              heading={position.heading}
-              zoom={pdfZoom}
-              rotation={pdfRotation}
-            />
+          <div className="absolute top-2 left-2 z-50 bg-background/80 text-xs px-2 py-1 rounded border whitespace-nowrap">
+            Rendered: {Math.round(containerWidth * pdfZoom)}px | Zoom: {pdfZoom}
+          </div>
+
+          {chartGeoStatus?.georef?.georeferenced &&
+            pixelPosition &&
+            position &&
+            georefEnabled &&
+            chartGeoStatus.width > 0 &&
+            chartGeoStatus.height > 0 && (
+              <>
+                <div className="absolute top-10 left-2 z-50 bg-yellow-500 text-black text-xs px-2 py-1 rounded whitespace-nowrap">
+                  Arrow: raw=({pixelPosition.x},{pixelPosition.y}) percent=(
+                  {((pixelPosition.x / chartGeoStatus.width) * 100).toFixed(1)}%,
+                  {((pixelPosition.y / chartGeoStatus.height) * 100).toFixed(1)}%)
+                </div>
+                <PositionArrow
+                  percentX={pixelPosition.x / chartGeoStatus.width}
+                  percentY={pixelPosition.y / chartGeoStatus.height}
+                  heading={position.heading ?? 0}
+                  rotation={pdfRotation}
+                />
+              </>
+            )}
+
+          {cursorPos && (
+            <div className="absolute top-2 right-2 z-50 bg-background/80 text-xs px-2 py-1 rounded border whitespace-nowrap">
+              Cursor: {cursorPos.x.toFixed(0)},{cursorPos.y.toFixed(0)}
+            </div>
           )}
         </div>
       </div>

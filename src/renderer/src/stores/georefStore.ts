@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { GeoRefStatus } from '@/lib/api-types'
+import { ChartDataResponse } from '@/lib/api-types'
 
 export interface AircraftPosition {
   lat: number
@@ -9,12 +9,12 @@ export interface AircraftPosition {
 
 interface GeorefState {
   position: AircraftPosition | null
-  chartGeoStatus: GeoRefStatus | null
+  chartGeoStatus: ChartDataResponse | null
   xplaneConnected: boolean
   windowFocused: boolean
 
   setPosition: (position: AircraftPosition | null) => void
-  setChartGeoStatus: (status: GeoRefStatus | null) => void
+  setChartGeoStatus: (status: ChartDataResponse | null) => void
   setXplaneConnected: (connected: boolean) => void
   setWindowFocused: (focused: boolean) => void
   reset: () => void

@@ -8,9 +8,9 @@ export interface AircraftPosition {
 }
 
 const DATAREFS = [
-  'sim/flightmodel/position/latitude',
-  'sim/flightmodel/position/longitude',
-  'sim/flightmodel/position/psi'
+  { path: 'sim/flightmodel/position/latitude', index: 1 },
+  { path: 'sim/flightmodel/position/longitude', index: 1 },
+  { path: 'sim/flightmodel/position/psi', index: 1 }
 ]
 
 const UPDATE_FREQ = 5
@@ -26,6 +26,7 @@ class XPlaneService {
   private connected = false
   private lastUpdateTime = 0
   private connectionTimeout: NodeJS.Timeout | null = null
+  private subscribed = false
 
   constructor() {
     this.handleMessage = this.handleMessage.bind(this)
@@ -112,15 +113,14 @@ class XPlaneService {
   }
 
   private subscribeDatarefs() {
-    if (!this.socket || !this.georefEnabled) return
+    if (!this.socket || !this.georefEnabled || this.subscribed) return
+    this.subscribed = true
 
-    DATAREFS.forEach((dataref, index) => {
-      const buf = this.createRrefRequest(UPDATE_FREQ, index, dataref)
+    DATAREFS.forEach(({ path, index }) => {
+      const buf = this.createRrefRequest(UPDATE_FREQ, index, path)
       this.socket!.send(buf, 0, buf.length, this.sendPort, '127.0.0.1', (err) => {
         if (err) {
-          console.error(`[XPlane] Failed to subscribe to ${dataref}:`, err)
-        } else {
-          console.log(`[XPlane] Subscribed to ${dataref}`)
+          console.error(`[XPlane] Failed to subscribe to ${path}:`, err)
         }
       })
     })
@@ -128,16 +128,18 @@ class XPlaneService {
 
   private unsubscribeDatarefs() {
     if (!this.socket) return
+    this.subscribed = false
 
-    DATAREFS.forEach((dataref, index) => {
-      const buf = this.createRrefRequest(0, index, dataref)
+    DATAREFS.forEach(({ path, index }) => {
+      const buf = this.createRrefRequest(0, index, path)
       this.socket!.send(buf, 0, buf.length, this.sendPort, '127.0.0.1')
     })
   }
 
   private createRrefRequest(freq: number, index: number, dataref: string): Buffer {
+    const DATAREF_FIELD_SIZE = 400
     const datarefBytes = Buffer.from(dataref, 'utf8')
-    const buf = Buffer.alloc(5 + 4 + 4 + datarefBytes.length + 1)
+    const buf = Buffer.alloc(5 + 4 + 4 + DATAREF_FIELD_SIZE)
 
     buf.write('RREF\0', 0, 5, 'ascii')
     buf.writeInt32LE(freq, 5)
@@ -154,22 +156,15 @@ class XPlaneService {
     const header = msg.toString('ascii', 0, 4)
     if (header !== 'RREF') return
 
+    const values: number[] = []
     for (let offset = 5; offset + 8 <= msg.length; offset += 8) {
-      const index = msg.readInt32LE(offset)
       const value = msg.readFloatLE(offset + 4)
-
-      switch (index) {
-        case 0:
-          this.position.lat = value
-          break
-        case 1:
-          this.position.lon = value
-          break
-        case 2:
-          this.position.heading = value
-          break
-      }
+      values.push(value)
     }
+
+    if (values.length >= 1) this.position.lat = values[0]
+    if (values.length >= 2) this.position.lon = values[1]
+    if (values.length >= 3) this.position.heading = values[2]
 
     this.lastUpdateTime = Date.now()
     this.setConnected(true)

@@ -49,11 +49,11 @@ export function SettingsPanel() {
       try {
         const res = await fetch(`${getApiBaseUrl()}/health`)
         const ver: string = (await res.json()).version.split('.')
-        if (parseInt(ver[0]) >= 2 && parseInt(ver[1]) >= 1) {
+        if (parseInt(ver[0]) >= 2 && parseInt(ver[1]) >= 2) {
           setIsConnected(true)
         } else {
           setIsConnected(false)
-          alert('Please update the API to version 2.1 or later.')
+          alert('Please update the API to version 2.2.0 or later.')
         }
       } catch {
         setIsConnected(false)
@@ -297,7 +297,7 @@ export function SettingsPanel() {
           <p className="text-xs text-muted-foreground">
             BetterJepp - A flight simulation chart viewer with SimBrief integration.
           </p>
-          <p className="text-xs text-muted-foreground">Version 1.0.0</p>
+          <p className="text-xs text-muted-foreground">Version 1.7.0</p>
         </div>
 
         <Separator />

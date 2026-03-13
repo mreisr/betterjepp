@@ -14,6 +14,7 @@ import {
   Pin
 } from 'lucide-react'
 import { useChartsStore } from '@renderer/stores/chartsStore'
+import { useGeorefStore } from '@renderer/stores/georefStore'
 import { cn } from '@renderer/lib/utils'
 
 function Separator({ className }: { className?: string }) {
@@ -38,6 +39,8 @@ export function TopBar() {
   const isPinned =
     useChartsStore((s) => s.isPinned(currentChart?.icao ?? '', currentChart?.filename ?? '')) ??
     false
+  const xplaneConnected = useGeorefStore((s) => s.xplaneConnected)
+  const position = useGeorefStore((s) => s.position)
 
   if (pdfNumPages === 0 || activeTab === 'settings') {
     return null
@@ -105,6 +108,15 @@ export function TopBar() {
         <Button variant="ghost" size="icon" onClick={togglePdfDarkMode} className="h-7 w-7">
           {pdfDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </Button>
+
+        <Separator className="h-5 w-px mx-0.5" />
+
+        <Badge
+          variant={xplaneConnected ? 'default' : 'outline'}
+          className="h-6 px-1.5 text-xs font-mono"
+        >
+          {position ? `${position.lat.toFixed(2)}, ${position.lon.toFixed(2)}` : '--.--, --.--'}
+        </Badge>
 
         <Button
           variant="ghost"

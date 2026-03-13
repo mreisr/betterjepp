@@ -33,6 +33,15 @@ export interface GeoRefStatus {
   bounds: ChartBounds
 }
 
+export interface ChartDataResponse {
+  icao: string
+  filename: string
+  width: number
+  height: number
+  georef?: GeoRefStatus
+  has_tcl: boolean
+}
+
 export interface CoordToPixelRequest {
   latitude: number
   longitude: number
@@ -186,6 +195,23 @@ export interface paths {
         200: {
           content: {
             'application/json': ChartList
+          }
+        }
+      }
+    }
+  }
+  '/api/v1/charts/{icao}/data/{filename}': {
+    get: {
+      parameters: {
+        path: {
+          icao: string
+          filename: string
+        }
+      }
+      responses: {
+        200: {
+          content: {
+            'application/json': ChartDataResponse
           }
         }
       }
