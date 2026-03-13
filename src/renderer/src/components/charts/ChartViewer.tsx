@@ -130,7 +130,6 @@ export function ChartViewer() {
 
   const [containerWidth, setContainerWidth] = useState(800)
   const [pixelPosition, setPixelPosition] = useState<{ x: number; y: number } | null>(null)
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null)
   const pageWrapperRef = useRef<HTMLDivElement>(null)
 
   // getScale is no longer needed since we use percentages
@@ -231,16 +230,7 @@ export function ChartViewer() {
   return (
     <div id="chart-container" className="h-full flex flex-col bg-muted/30">
       <div className="flex-1 overflow-auto flex items-start justify-center p-6">
-        <div
-          className="relative"
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect()
-            const x = e.clientX - rect.left
-            const y = e.clientY - rect.top
-            setCursorPos({ x, y })
-          }}
-          onMouseLeave={() => setCursorPos(null)}
-        >
+        <div className="relative">
           <Document
             file={pdfUrl}
             onLoadSuccess={({ numPages }) => setPdfNumPages(numPages)}
@@ -268,10 +258,6 @@ export function ChartViewer() {
 
           <GeorefStatusBadge />
 
-          <div className="absolute top-2 left-2 z-50 bg-background/80 text-xs px-2 py-1 rounded border whitespace-nowrap">
-            Rendered: {Math.round(containerWidth * pdfZoom)}px | Zoom: {pdfZoom}
-          </div>
-
           {chartGeoStatus?.georef?.georeferenced &&
             pixelPosition &&
             position &&
@@ -279,11 +265,6 @@ export function ChartViewer() {
             chartGeoStatus.width > 0 &&
             chartGeoStatus.height > 0 && (
               <>
-                <div className="absolute top-10 left-2 z-50 bg-yellow-500 text-black text-xs px-2 py-1 rounded whitespace-nowrap">
-                  Arrow: raw=({pixelPosition.x},{pixelPosition.y}) percent=(
-                  {((pixelPosition.x / chartGeoStatus.width) * 100).toFixed(1)}%,
-                  {((pixelPosition.y / chartGeoStatus.height) * 100).toFixed(1)}%)
-                </div>
                 <PositionArrow
                   percentX={pixelPosition.x / chartGeoStatus.width}
                   percentY={pixelPosition.y / chartGeoStatus.height}
@@ -292,12 +273,6 @@ export function ChartViewer() {
                 />
               </>
             )}
-
-          {cursorPos && (
-            <div className="absolute top-2 right-2 z-50 bg-background/80 text-xs px-2 py-1 rounded border whitespace-nowrap">
-              Cursor: {cursorPos.x.toFixed(0)},{cursorPos.y.toFixed(0)}
-            </div>
-          )}
         </div>
       </div>
     </div>
